@@ -1,0 +1,1 @@
+web: dotnet AiMarketplaceApi.dll --urls=http://+:5000

@@ -25,49 +25,45 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
+    public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
+        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
         {
             return BadRequest("Email already exists");
         }
 
         var user = new User
         {
-            Email = registerDto.Email,
-            Username = registerDto.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
+            Email = request.Email,
+            Username = request.Username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        return new UserDto
+        return new LoginResponse
         {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Token = GenerateToken(user)
+            Token = GenerateToken(user),
+            User = user
         };
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return Unauthorized();
         }
 
-        return new UserDto
+        return new LoginResponse
         {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Token = GenerateToken(user)
+            Token = GenerateToken(user),
+            User = user
         };
     }
 
@@ -103,31 +99,21 @@ public class AuthController : ControllerBase
 }
 
 // DTOs
-public class RegisterDto
+public class RegisterRequest
 {
-    [Required]
-    public string Email { get; set; } = string.Empty;
-    
-    [Required]
     public string Username { get; set; } = string.Empty;
-    
-    [Required]
+    public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
 
-public class LoginDto
+public class LoginRequest
 {
-    [Required]
     public string Email { get; set; } = string.Empty;
-    
-    [Required]
     public string Password { get; set; } = string.Empty;
 }
 
-public class UserDto
+public class LoginResponse
 {
-    public int Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
+    public User User { get; set; } = null!;
 }
