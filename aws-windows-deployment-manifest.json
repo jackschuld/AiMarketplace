@@ -1,0 +1,30 @@
+{
+    "manifestVersion": 1,
+    "deployments": {
+        "aspNetCoreWeb": [
+            {
+                "name": "AiMarketplaceApi",
+                "parameters": {
+                    "appBundle": ".",
+                    "iisPath": "/",
+                    "iisWebSite": "Default Web Site"
+                },
+                "scripts": {
+                    "application_start": "dotnet AiMarketplaceApi.dll"
+                }
+            }
+        ]
+    },
+    "AWS": {
+        "Region": "us-east-2",
+        "Credentials": {
+            "Role": {
+                "Name": "aws-elasticbeanstalk-ec2-role",
+                "Policies": [
+                    "AWSSecretsManagerReadWrite",
+                    "AWSElasticBeanstalkWebTier"
+                ]
+            }
+        }
+    }
+}

@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AiMarketplaceApi.Data.Seeders;
+using Amazon.SecretsManager;
+using Amazon.SecretsManager.Model;
+using System.Text.Json;
 
 // Load environment variables from .env file
-Env.Load();
+// Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,14 +24,17 @@ builder.Services.AddCors(options =>
         builder =>
         {
             builder
-                .WithOrigins("http://localhost:3000") 
+                .WithOrigins(
+                    "http://localhost:3000",  // for local development
+                    "https://marketplace.jackschuld.com"  // your frontend subdomain
+                ) 
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
         });
 });
 
-// Build MySQL connection string from environment variables
+// Just use environment variables directly
 var connectionString = $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
                       $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
                       $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
@@ -68,10 +74,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    Environment.GetEnvironmentVariable("JWT_KEY") ?? 
-                    throw new InvalidOperationException("JWT_KEY not set in environment")
-                )
+                Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_KEY"))
             ),
             ValidateIssuer = false,
             ValidateAudience = false
@@ -98,6 +101,9 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add root endpoint
+app.MapGet("/", () => "AiMarketplace API is running!");
 
 using (var scope = app.Services.CreateScope())
 {
